@@ -11,7 +11,7 @@ library(vegan)
 library(tidyverse)
 library(patchwork)
 library(ggrepel)
-library(ggvegan)
+# library(ggvegan)
 library(ggdendro)
 library(dendextend)
 library(sf)
@@ -53,7 +53,7 @@ places <- read.csv('../data/map_places.csv')
 ggplot(data = coast.gbi) +
   geom_sf(col = 'blue') +
   geom_point(data = places, aes(x = long.tm, y = lat.tm)) +
-  geom_label_repel(data = places, aes(x = long.tm, y = lat.tm, label = name), size = 4.5, alpha = 0.7) +
+  geom_text_repel(data = places, aes(x = long.tm, y = lat.tm, label = name), size = 4.5, alpha = 0.7) +
   xlab('Latitude') +
   ylab('Longitude') + 
   annotation_scale(location = "bl", width_hint = 0.4) +
@@ -66,22 +66,34 @@ ggplot(data = coast.gbi) +
 This will be Figure 3
 
 ```{r richness, echo = FALSE, message = FALSE}
-df <- data.frame(elev = elev, site = site, woody = rowSums(mts.woody), ferns = rowSums(mts.ferns))
+all.data <- data.frame(elev = elev, site = site, woody = rowSums(mts.woody), ferns = rowSums(mts.ferns))
 
-df.long <- df %>%
+all.data.long <- all.data %>%
   pivot_longer(cols = 3:4, values_to = 'richness', names_to = 'taxa')
 
-elev.s <- ggplot(df.long) +
+elev.s.woody <- ggplot(filter(all.data.long, taxa == 'woody')) +
   geom_point(aes(x = elev, y = richness, col= site, shape = site), size = 2.5) +
   scale_colour_brewer(type = 'qual', name = "Maunga", labels = c("Hirikimata", "Ruahine", "Tataweka")) +
+  scale_shape_manual(values = c(16,17, 15), name = "Maunga", labels = c("Hirikimata", "Ruahine", "Tataweka")) +  
   labs(x = 'Elevation (m)', y = 'Species richness') +
   geom_smooth(aes(x = elev, y = richness), method = 'lm') +
-  facet_wrap(~factor(taxa, levels=c('woody', 'ferns'))) +
   ylim(0,70) +
-  guides(shape = FALSE) +
   theme_minimal()
 
-elev.s
+elev.s.ferns <- ggplot(filter(all.data.long, taxa == 'ferns')) +
+  geom_point(aes(x = elev, y = richness, col= site, shape = site), size = 2.5) +
+  scale_colour_brewer(type = 'qual', name = "Maunga", labels = c("Hirikimata", "Ruahine", "Tataweka")) +
+  scale_shape_manual(values = c(16,17, 15), name = "Maunga", labels = c("Hirikimata", "Ruahine", "Tataweka")) +  
+  labs(x = 'Elevation (m)', y = 'Species richness') +
+  geom_smooth(aes(x = elev, y = richness), method = 'lm') +
+  ylim(0,70) +
+  theme_minimal() +
+  theme(axis.title.y = element_blank())
+  
+ee <- elev.s.woody + elev.s.ferns +
+  plot_annotation(tag_levels = 'A') + plot_layout(guides = 'collect')
+ee & theme(legend.position = 'bottom')
+  
 ```
 
 ## Pairwise differences  of sites (different mt) 
@@ -118,6 +130,8 @@ woody.pairs.gg <- ggplot(woody.pairwise.bc) +
   theme_bw()
 ```
 
+also
+
 ```{r ferns_pairwise, echo = FALSE}
 # Make a long version of the distance matrix
 ferns.mts.dist.df <- data.frame(as.matrix(ferns.dist)) %>%
@@ -139,13 +153,14 @@ ferns.pairs.gg <- ggplot(ferns.pairwise.bc) +
   scale_colour_brewer(type = 'qual', name = 'Site pair') +
   ylim(0,1) +
   guides(shape = FALSE) +
-  theme_bw()
+  theme_bw() +
+  theme(axis.title.y = element_blank())
 ```
 
 
 ```{r, echo = FALSE}
 pp <- woody.pairs.gg + ferns.pairs.gg + plot_annotation(tag_levels = 'A') + plot_layout(guides = 'collect')
-pp & theme(legend.position = 'bottom')
+pp & theme(legend.position = 'bottom') 
 ```
 
 
