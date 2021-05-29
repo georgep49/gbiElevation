@@ -52,19 +52,18 @@ plot.mds.gg <- function(mds, txt.col = 'blue', txt.x = 0, txt.y = 0, clusters = 
   plot.obj
 }
 
-extract.limits <- function(sppsite)
+# Function to extract the elevation range that each spp occurs over
+extract.limits <- function(sppsite, elev)
 {
-  e.min <- function(x) {min(which(x == 1))}
-  e.max <- function(x) {max(which(x == 1))}
+  e.min <- function(x) { min(elev[which (x != 0)]) }  # assume pres-absence
+  e.max <- function(x) { max(elev[which (x != 0)]) }  
+  
+  elev.rg <- cbind(apply(sppsite, 2, e.min), apply(sppsite, 2, e.max))
+  elev.rg <- as.data.frame(elev.rg) %>%
+    rownames_to_column(var = "spp") %>%
+    rename("min" = V1, "max" = V2) %>%
+    mutate(spp = str_to_title(spp))
 
-  elev.which <- cbind(apply(sppsite[,-(1:2)], 2, e.min), apply(sppsite[,-(1:2)], 2, e.max))
-  elev.rg <- matrix(sppsite$elev[elev.which], ncol = 2)
-
-  elev.rg <- as.data.frame(elev.rg)
-  names(elev.rg) <- c('min','max')
-
-  elev.rg$spp <- names(sppsite[-(1:2)])
-  elev.rg$spp <- str_to_title(elev.rg$spp) 
   elev.rg$single <- ifelse(elev.rg$max == elev.rg$min, 1, 0)
     
   elev.rg.s <- dplyr::filter(elev.rg, single != 0)

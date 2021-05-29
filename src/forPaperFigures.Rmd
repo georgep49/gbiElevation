@@ -321,6 +321,7 @@ ferns.hira_only <- Reduce(setdiff, list(nh.f, nt.f, nr.f)) # spp only at Hira
 # Hirakimata
 # h.only.list <- c('metumb', 'gauant', 'drasin', 'metpar', 'pitkir','epapau', 'drapat', 'corbud', 'arcrac', 'ascluc', 'lepint', 'halkir', 'copdod', 'oleall', 'phygla','ixebre', 'kunsin', 'agaaus', 'phenud', 'pertor', 'phytri', 'nesmon')
 # h.f.only.list <- c('tristr', 'lintri', 'hymrar', 'glemic', 'blepro', 'lyccer', 'loxcun', 'diclan', 'stifla', 'gledic', 'trielo', 'linlin')
+
 hira_only.range <- get.elevation.limits(mts.woody, woody.hira_only)
 hira_only.ferns.range <- get.elevation.limits(mts.ferns, ferns.hira_only)
 
