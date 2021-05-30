@@ -53,10 +53,13 @@ plot.mds.gg <- function(mds, txt.col = 'blue', txt.x = 0, txt.y = 0, clusters = 
 }
 
 # Function to extract the elevation range that each spp occurs over
-extract.limits <- function(sppsite, elev)
+extract.limits <- function(sppsite, spp.list, elev)
 {
   e.min <- function(x) { min(elev[which (x != 0)]) }  # assume pres-absence
   e.max <- function(x) { max(elev[which (x != 0)]) }  
+  
+  sppsite <- sppsite[, spp.list]
+  sppsite <- sppsite[rowSums(sppsite) > 0, ]
   
   elev.rg <- cbind(apply(sppsite, 2, e.min), apply(sppsite, 2, e.max))
   elev.rg <- as.data.frame(elev.rg) %>%
@@ -73,17 +76,17 @@ extract.limits <- function(sppsite, elev)
   list(elev.lims = elev.rg, elev.lims.sgl = elev.rg.s)
 }
 
-get.elevation.limits <- function(sppsite, spp.list)
-{
-  sppsite <- sppsite[, spp.list]
-  sppsite <- sppsite[rowSums(sppsite) > 0, ]
-  
-  sppsite <- as.data.frame(sppsite) %>%
-    rownames_to_column(var = "site.elev") %>%
-    separate(col = "site.elev", into = c("site", "elev")) %>%
-    mutate(elev = as.numeric(elev)) %>%
-    arrange(elev)
-
-  e.range <- extract.limits(sppsite)
-  e.range
-}  
+# get.elevation.limits <- function(sppsite, spp.list, elev)
+# {
+#   sppsite <- sppsite[, spp.list]
+#   sppsite <- sppsite[rowSums(sppsite) > 0, ]
+#   
+#   sppsite <- as.data.frame(sppsite) %>%
+#     rownames_to_column(var = "site.elev") %>%
+#     separate(col = "site.elev", into = c("site", "elev")) %>%
+#     mutate(elev = as.numeric(elev)) %>%
+#     arrange(elev)
+# 
+#   e.range <- extract.limits(sppsite, elev)
+#   e.range
+# }  

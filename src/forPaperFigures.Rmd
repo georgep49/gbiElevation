@@ -318,21 +318,21 @@ ferns.hira_only <- Reduce(setdiff, list(nh.f, nt.f, nr.f)) # spp only at Hira
 ```
 
 ```{r extract_range_data, echo = FALSE}
-# Hirakimata
-# h.only.list <- c('metumb', 'gauant', 'drasin', 'metpar', 'pitkir','epapau', 'drapat', 'corbud', 'arcrac', 'ascluc', 'lepint', 'halkir', 'copdod', 'oleall', 'phygla','ixebre', 'kunsin', 'agaaus', 'phenud', 'pertor', 'phytri', 'nesmon')
-# h.f.only.list <- c('tristr', 'lintri', 'hymrar', 'glemic', 'blepro', 'lyccer', 'loxcun', 'diclan', 'stifla', 'gledic', 'trielo', 'linlin')
 
-hira_only.range <- get.elevation.limits(mts.woody, woody.hira_only)
-hira_only.ferns.range <- get.elevation.limits(mts.ferns, ferns.hira_only)
+# Hirakimata ONLY
+hira_only.range <- extract.limits(mts.woody, woody.hira_only, elev)
+hira_only.ferns.range <- extract.limits(mts.ferns, ferns.hira_only, elev)
 
-hira.range <- get.elevation.limits(mts.woody[grep(pattern = 'H', rownames(mts.woody)),], woody.hira) # grep to ignore R and T
-hira.ferns.range <- get.elevation.limits(mts.ferns[grep(pattern = 'H', rownames(mts.ferns)),], ferns.hira)
+# Species at Hirakimata and elsewhere
+# Using grep to ignore R and T
+hira.set <- grep(pattern = 'H', rownames(mts.woody))
 
-## Present at all three mts (sites)
-all_sites.range <- get.elevation.limits(mts.woody, woody.all_sites)
-all_sites.range <- get.elevation.limits(mts.woody, woody.all_sites)
+hira.range <- extract.limits(mts.woody[hira.set,], woody.hira, elev) 
+hira.ferns.range <- extract.limits(mts.ferns[hira.set,], ferns.hira, elev)
 
-all_sites.ferns.range <- get.elevation.limits(mts.ferns, ferns.all_sites)
+## Present at ALL THREE mts (sites)
+all_sites.range <- extract.limits(mts.woody, woody.all_sites, elev)
+all_sites.ferns.range <- extract.limits(mts.ferns, ferns.all_sites, elev)
 ```
 
 ```{r build_range_plots, echo = FALSE}
@@ -345,7 +345,6 @@ hira.wdy.rg <- ggplot(data = hira_only.range$elev.lims) +
   geom_point(data = hira_only.range$elev.lims.sgl, aes(x = min, y = spp), shape = 3) +
   labs(x = "Elevation (m)", y = "Species") +
   theme_bw()
-
 
 hira.fern.rg <- ggplot(data = hira_only.ferns.range$elev.lims) +
   geom_segment(aes(x = min, xend = max, y = spp, yend = spp), size = 3) +
@@ -389,7 +388,7 @@ all.fern.rg <- ggplot() +
   theme_bw()
 ```
 
-Plots of the ranges of (a) woody species and (b) ferns on Hirakimata _only_ and all three sites at an elevation of 150 m => two figures
+Plots of the ranges of (a) woody species and (b) ferns on Hirakimata _only_ and all three sites at an elevation of 150 m to 400 m (lower bnd, upper bnd) -> 'lowland' species
 
 ```{r plot_ranges, echo = FALSE}
 library(patchwork)
