@@ -292,7 +292,9 @@ woody.hira <- nh
 woody.hira_only <- Reduce(setdiff, list(nh, nt, nr)) # spp only at Hira
 
 # Species present at all three sites at 150 m
-woody.all_sites_150 <- names(mts.woody.df)[-1][colSums(mts.woody.df[elev == 150,-1]) == 3]
+lowl.spp <- colSums(mts.woody.df[elev == 150,-1]) == 3 & colSums(mts.woody.df[elev == 400]) == 0
+
+woody.all_sites_150 <- names(mts.woody.df)[-1][]
 
 ########################
 # Fern spp
@@ -336,7 +338,6 @@ all_sites.ferns.range <- extract.limits(mts.ferns, ferns.all_sites, elev)
 ```
 
 ```{r build_range_plots, echo = FALSE}
-
 pal <- RColorBrewer::brewer.pal(3, "Accent")   
 
 # ordering by min
