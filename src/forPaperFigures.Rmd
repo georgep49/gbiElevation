@@ -17,14 +17,14 @@ library(dendextend)
 library(sf)
 library(ggspatial)
 
-source('helperPlots.r')
+source('./src/helperPlots.r')
 # here::here()
 ```
 
 
 ```{r load_data, echo = FALSE}
-mts.woody <- read.csv('../data/woodyAltitude_rev.csv', header = T, row.names = 1)
-mts.ferns <- read.csv('../data/fernAltitude_rev.csv', header = T, row.names = 1)
+mts.woody <- read.csv('./data/woodyAltitude_rev.csv', header = T, row.names = 1)
+mts.ferns <- read.csv('./data/fernAltitude_rev.csv', header = T, row.names = 1)
 
 # get the site codes and elevations
 site <- str_sub(names(mts.woody), 1, 1)
@@ -43,12 +43,12 @@ mts.ferns[is.na(mts.ferns)] <- 0
 Figure 2 = map (to be tidied)
 
 ```{r map, echo = FALSE, message = FALSE}
-coast <- read_sf("../data/nz_coast_NZTM")
+coast <- read_sf("./data/nz_coast_NZTM")
 
 bd <- c(1741620, 5859550, 1834360,	6012920)
 coast.gbi <- st_crop(coast, xmin = 1741620, ymin = 5859550, xmax = 1834360,	ymax = 6012920)
 
-places <- read.csv('../data/map_places.csv')
+places <- read.csv('./data/map_places.csv')
 
 ggplot(data = coast.gbi) +
   geom_sf(col = 'blue') +
@@ -126,7 +126,7 @@ woody.pairs.gg <- ggplot(woody.pairwise.bc) +
   labs(x = 'Elevation (m)', y = 'Dissimilarity (Bray-Curtis)') +
   scale_colour_brewer(type = 'qual', name = 'Site pair') +
   ylim(0,1) +
-  guides(shape = FALSE) +
+  guides(shape = "none") +
   theme_bw()
 ```
 
@@ -152,7 +152,7 @@ ferns.pairs.gg <- ggplot(ferns.pairwise.bc) +
   labs(x = 'Elevation (m)', y = 'Dissimilarity (Bray-Curtis)') +
   scale_colour_brewer(type = 'qual', name = 'Site pair') +
   ylim(0,1) +
-  guides(shape = FALSE) +
+  guides(shape = "none") +
   theme_bw() +
   theme(axis.title.y = element_blank())
 ```
@@ -230,7 +230,7 @@ woody.stress.lbl <- paste('Stress = ', round(woody.mds$stress, 4))
 woody.mds.simp.gg <- plot.mds.gg(woody.mds, clusters = site, txt.x = 1, txt.y = 0.7) +
   geom_text_repel(data = woody.mds.sc, aes(x = NMDS1, y = NMDS2, label = site.code)) +
   scale_colour_brewer(type = 'qual', name = "Maunga", labels = c("Hirikimata", "Ruahine", "Tataweka")) +
-  guides(shape = FALSE) +
+  guides(shape = "none") +
   theme(legend.position = "bottom")
 ```
 
@@ -254,8 +254,8 @@ ferns.stress.lbl <- paste('Stress = ', round(ferns.mds$stress, 4))
 
 ferns.mds.simp.gg <- plot.mds.gg(ferns.mds, clusters = site, txt.x = 0.7, txt.y = -1) +
   geom_text_repel(data = ferns.mds.sc, aes(x = NMDS1, y = NMDS2, label = site.code)) +
-  scale_colour_brewer(type = 'qual', name = "Site", labels = c("Hirikimata", "Ruahine", "Tataweka")) +
-  guides(shape = FALSE) +
+  scale_colour_brewer(type = "qual", name = "Site", labels = c("Hirikimata", "Ruahine", "Tataweka")) +
+  guides(shape = "none") +
   theme(legend.position = "bottom")
 ```
 
@@ -274,7 +274,7 @@ mutate(site_synth = ifelse(site == 'H', 'H', 'T_R')) %>%
 rownames_to_column(var = 'site_elev') %>%
 separate(site_elev, into = c('site', 'elev'))
 
-mts.woody.df <- mts.woody.df %>% select(site, aleexc:weisil)
+mts.woody.df <- mts.woody.df %>% select(site, agaaus:weisil)
 
 mts.split <- mts.woody.df %>% split(mts.woody.df$site)
 
@@ -291,10 +291,17 @@ woody.all_sites <- Reduce(intersect, list(nh, nt, nr)) # spp present at all thre
 woody.hira <- nh
 woody.hira_only <- Reduce(setdiff, list(nh, nt, nr)) # spp only at Hira
 
-# Species present at all three sites at 150 m
-lowl.spp <- colSums(mts.woody.df[elev == 150,-1]) == 3 & colSums(mts.woody.df[elev == 400]) == 0
+# Species present at all three sites at 150 m and not above 500 m
+# spp.at.150 <-  colSums(mts.woody[elev == 150,]) == 3
+# spp.at.200 <-  colSums(mts.woody[elev == 200,]) == 3
 
-woody.all_sites_150 <- names(mts.woody.df)[-1][]
+lowland.spp <- (colSums(mts.woody[elev == 150,]) == 3) + (colSums(mts.woody[elev == 200,]) == 3) > 0
+spp.notabv.450 <- colSums(mts.woody[elev %in% seq(550,600,50),]) == 0
+
+lowland.spp <- lowland.spp * spp.notabv.450
+lowland.spp <- names(lowland.spp[lowland.spp == TRUE]) 
+
+#woody.all_sites_150 <- names(mts.woody.df)[-1][]
 
 ########################
 # Fern spp
@@ -329,7 +336,7 @@ hira_only.ferns.range <- extract.limits(mts.ferns, ferns.hira_only, elev)
 # Using grep to ignore R and T
 hira.set <- grep(pattern = 'H', rownames(mts.woody))
 
-hira.range <- extract.limits(mts.woody[hira.set,], woody.hira, elev) 
+hira.range <- extract.limits(mts.woody[hira.set,], woody.hira, elev)
 hira.ferns.range <- extract.limits(mts.ferns[hira.set,], ferns.hira, elev)
 
 ## Present at ALL THREE mts (sites)
@@ -354,8 +361,8 @@ hira.fern.rg <- ggplot(data = hira_only.ferns.range$elev.lims) +
   theme_bw()
 
 # Extract the spp at Hira also present elsewhere (as may have different range) - in both cases have to be at 150 m
-hira.e <- hira.range$elev.lims[str_to_lower(hira.range$elev.lims$spp) %in% woody.all_sites_150, ]
-all.e <- all_sites.range$elev.lims[str_to_lower(all_sites.range$elev.lims$spp) %in% woody.all_sites_150, ]
+hira.e <- hira.range$elev.lims[hira.range$elev.lims$spp %in% lowland.spp, ]
+all.e <- all_sites.range$elev.lims[all_sites.range$elev.lims$spp %in% lowland.spp, ]
 
 # Plots ordered by upper limit on Hirikimata
 hira.e$spp <- fct_reorder(hira.e$spp, hira.e$max, min)
@@ -372,7 +379,7 @@ all.wdy.rg <- ggplot() +
   theme_bw()
 
 # And now the fern taxa
-hira.f.e <- hira.ferns.range$elev.lims[str_to_lower(hira.ferns.range$elev.lims$spp) %in% ferns.all_sites, ]
+hira.f.e <- hira.ferns.range$elev.lims[hira.ferns.range$elev.lims$spp %in% ferns.all_sites, ]
 all.f.e <- all_sites.ferns.range$elev.lims
 
 hira.f.e$spp <- fct_reorder(hira.f.e$spp, hira.f.e$max, min)
