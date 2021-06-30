@@ -55,10 +55,8 @@ plot.mds.gg <- function(mds, txt.col = 'blue', txt.x = 0, txt.y = 0, clusters = 
 # Function to extract the elevation range that each spp occurs over
 extract.limits <- function(sppsite, spp.list, elev)
 {
-
-
   e.min <- function(x) { min(elev[which (x != 0)]) }  # assume pres-absence
-  e.max <- function(x) { max(elev[which (x != 0)]) }
+  e.max <- function(x) { max(elev[which (x != 0)]) }  
   
   sppsite <- sppsite[, spp.list]
   sppsite <- sppsite[rowSums(sppsite) > 0, ]
@@ -66,8 +64,8 @@ extract.limits <- function(sppsite, spp.list, elev)
   elev.rg <- cbind(apply(sppsite, 2, e.min), apply(sppsite, 2, e.max))
   elev.rg <- as.data.frame(elev.rg) %>%
     rownames_to_column(var = "spp") %>%
-    rename("min" = V1, "max" = V2) #%>%
-    #mutate(spp = str_to_title(spp))
+    rename("min" = V1, "max" = V2) %>%
+    mutate(spp = str_to_title(spp))
 
   elev.rg$single <- ifelse(elev.rg$max == elev.rg$min, 1, 0)
     
