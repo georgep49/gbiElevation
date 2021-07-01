@@ -29,7 +29,7 @@ plot.mds.gg <- function(mds, txt.col = 'blue', txt.x = 0, txt.y = 0, clusters = 
       geom_point(aes(x = NMDS1, y = NMDS2), alpha  = 1, size = 1) + 
       annotate(geom = 'text', x = txt.x, y = txt.y, label = stress.lbl, col = txt.col) +
       labs(x = 'NDMS 1', y = 'NMDS 2') +
-      theme_minimal() +
+      theme_bw() +
       coord_equal() + 
       theme(legend.position = "none")
   } else 
@@ -40,7 +40,7 @@ plot.mds.gg <- function(mds, txt.col = 'blue', txt.x = 0, txt.y = 0, clusters = 
       geom_point(aes(x = NMDS1, y = NMDS2, col = cl, shape = cl), size = 3, alpha  = 1) + 
       annotate(geom = 'text', x = txt.x, y = txt.y, label = stress.lbl, col = txt.col) +
       labs(x = 'NDMS 1', y = 'NMDS 2') +
-      theme_minimal() +
+      theme_bw() +
       coord_equal() 
   }
   

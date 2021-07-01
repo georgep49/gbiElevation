@@ -13,8 +13,8 @@ library(ggspatial)
 source("./src/helperPlots.r")
 
 ## ----load_data, echo = FALSE----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-mts.woody <- read.csv("./data/woodyAltitude_rev.csv", header = T, row.names = 1)
-mts.ferns <- read.csv("./data/fernAltitude_rev.csv", header = T, row.names = 1)
+mts.woody <- read.csv("./data/woodyAltitude_rev2.csv", header = T, row.names = 1)
+mts.ferns <- read.csv("./data/fernAltitude_rev2.csv", header = T, row.names = 1)
 
 # get the site codes and elevations
 site <- str_sub(names(mts.woody), 1, 1)
@@ -33,16 +33,18 @@ mts.ferns[is.na(mts.ferns)] <- 0
 
 coast <- read_sf("./data/coast_poly_NZTM")
 #bd <- c(1741620, 5859550, 1834360,	6012920)
-#coast.gbi <- st_crop(coast, xmin = 1741620, ymin = 5859550, xmax = 1834360,	ymax = 6012920)
+#
+coast.akld <- st_crop(coast, xmin = 1741620, ymin = 5859550, xmax = 1834360,	ymax = 6012920)
+coast.gbi <- st_crop(coast.akld, xmin = 1803169, ymin = 5971850, xmax = 6012920,	ymax = 6012920)
 
 places <- read_csv("./data/map_places.csv", col_types = "cddddfn")
 places.rg <- filter(places, gbi.loc == 0)
 places.gbi <- filter(places, gbi.loc == 1)
 
 
-rg.map <- ggplot(data = coast) +
+rg.map <- ggplot(data = coast.akld) +
   geom_sf(col = "blue", fill = "#eeeeee") +
-  coord_sf(xlim = c(1741620, 1834360), ylim = c(5859550, 6012920), expand = FALSE) +
+  coord_sf(expand = FALSE) +
   geom_point(data = places.rg, aes(x = long.tm, y = lat.tm, shape = sym), size = 4) +
   geom_label_repel(data = places.rg, aes(x = long.tm, y = lat.tm, label = name), size = 4.5, alpha = 0.7) +
   xlab("Latitude") +
@@ -51,9 +53,9 @@ rg.map <- ggplot(data = coast) +
   guides(shape = "none") +
   theme_bw()
 
-gbi.map <- ggplot(data = coast) +
+gbi.map <- ggplot(data = coast.gbi) +
   geom_sf(col = "blue", fill = "#eeeeee") +
-  coord_sf(xlim = c(1803169, 1832400), ylim = c(5971850, 6012920), expand = FALSE) +
+  coord_sf(expand = FALSE) +
   geom_point(data = places.gbi, aes(x = long.tm, y = lat.tm, shape = sym), size = 4) +
   geom_label_repel(data = places.gbi, aes(x = long.tm, y = lat.tm, label = name), size = 4.5, alpha = 0.7) +
   xlab("Latitude") +
@@ -95,10 +97,9 @@ elev.s.ferns <- ggplot(ferns.plot) +
   theme(axis.title.y = element_blank())
   
 elev.plots <- elev.s.woody + elev.s.ferns +
-  plot_annotation(tag_levels = "a") + plot_layout(guides = "collect") &
-   theme(legend.position = "bottom")
-  
-
+  plot_annotation(tag_levels = "a") + 
+  plot_layout(guides = "collect") &
+  theme(legend.position = "bottom")
 
 ## ----dist_mtx, echo = FALSE-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # bray-curtis distance matrix
@@ -155,14 +156,15 @@ ferns.pairs.gg <- ggplot(ferns.pairwise.bc) +
 
 
 ## ---- echo = FALSE--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-pair.dist.plot <- woody.pairs.gg + ferns.pairs.gg + plot_annotation(tag_levels = "a") + plot_layout(guides = "collect") &
- theme(legend.position = "bottom")
+pair.dist.plot <- (woody.pairs.gg + ferns.pairs.gg) + 
+  plot_annotation(tag_levels = "a") + 
+  plot_layout(guides = "collect") &
+  theme(legend.position = "bottom")
 
 
 ## ----hac, echo = FALSE, warning = FALSE-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 pal <- RColorBrewer::brewer.pal(3, "Accent")
-
 woody.hcl <- hclust(woody.dist, method = "average")
 woody.hcl <- as.dendrogram(woody.hcl)
 
@@ -215,393 +217,7 @@ woody.stress.lbl <- paste("Stress = ", round(woody.mds$stress, 4))
 # plot.mds.gg <- function(mds, txt.col = "blue", txt.x = 0, txt.y = 0, clusters = NULL, labels = FALSE)
 
 woody.mds.simp.gg <- plot.mds.gg(woody.mds, clusters = site, txt.x = 1, txt.y = 0.7) +
-  geom_text_repel(data = woody.mds.sc, aes(x = NMDS1, y = NMDS2, label = site.code)) +
-  scale_colour_brewer(type = "qual", name = "Site", labels = c("Hirikimata", "Ruahine", "Tataweka")) +
-  guides(shape = "none") +
-  theme(legend.position = "bottom")
-
-
-## ----ferns_nmds, echo = FALSE, message = FALSE----------------------------------------------------------------------------------------------------------------------------------------------------------------
-# nMDS
-ferns.mds <- metaMDS(mts.ferns, distance = "bray", wascores = TRUE, autotransform = FALSE, k = 2, rty = 100, trace = 0)
-
-#plot(ferns.mds, type = "t", display = "sites")
-ferns.mds.sc <- data.frame(scores(ferns.mds), site.code = rownames(mts.ferns), site = site, elev = elev)
-
-ferns.stress.lbl <- paste("Stress = ", round(ferns.mds$stress, 4))
-
-ferns.mds.simp.gg <- plot.mds.gg(ferns.mds, clusters = site, txt.x = 0.7, txt.y = -1) +
-  geom_text_repel(data = ferns.mds.sc, aes(x = NMDS1, y = NMDS2, label = site.code)) +
-  scale_colour_brewer(type = "qual", name = "Site", labels = c("Hirikimata", "Ruahine", "Tataweka")) +
-  guides(shape = "none") +
-  theme(legend.position = "bottom")
-
-
-source("./src/dispLocAnalysis.r")
-
-## ---- echo = FALSE--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-mds.plots <- woody.mds.simp.gg + ferns.mds.simp.gg +  
-plot_annotation(tag_levels = 'a')
-
-
-## ----extract_names, echo = FALSE------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-# Woody spp
-mts.woody.df <- data.frame(mts.woody)
-mts.woody.df <- mts.woody.df %>%
-mutate(site_synth = ifelse(site == "H", "H", "T_R")) %>%
-rownames_to_column(var = "site_elev") %>%
-separate(site_elev, into = c("site", "elev"))
-
-mts.woody.df <- mts.woody.df %>% select(site, agaaus:weisil)knitr::opts_chunk$set(echo = TRUE)
-
-
-mts.split <- mts.woody.df %>% split(mts.woody.df$site)
-
-mts.split$H <- mts.split$H[,-(1:2)]
-mts.split$T <- mts.split$T[,-(1:2)]
-mts.split$R <- mts.split$R[,-(1:2)]
-
-nh <- colnames(mts.split$H[, colSums(mts.split$H) > 0])
-nt <- colnames(mts.split$T[, colSums(mts.split$T) > 0])
-nr <- colnames(mts.split$R[, colSums(mts.split$R) > 0])
-
-spp.all <- unique(c(nh, nt, nr))  # species list for all three sites
-woody.all_sites <- Reduce(intersect, list(nh, nt, nr)) # spp present at all three sites
-woody.hira <- nh
-woody.hira_only <- Reduce(setdiff, list(nh, nt, nr)) # spp only at Hira
-
-# Species present at all three sites at 150 m and not above 500 m
-# spp.at.150 <-  colSums(mts.woody[elev == 150,]) == 3
-# spp.at.200 <-  colSums(mts.woody[elev == 200,]) == 3
-
-lowland.spp <- (colSums(mts.woody[elev == 150,]) == 3) + (colSums(mts.woody[elev == 200,]) == 3) > 0
-spp.notabv.450 <- colSums(mts.woody[elev %in% seq(550,600,50),]) == 0
-
-lowland.spp <- lowland.spp * spp.notabv.450
-lowland.spp <- names(lowland.spp[lowland.spp == TRUE]) 
-
-#woody.all_sites_150 <- names(mts.woody.df)[-1][]
-
-########################
-# Fern spp
-mts.ferns.df <- data.frame(mts.ferns)
-mts.ferns.df$site <- site
-
-mts.ferns.df <- mts.ferns.df %>% select(site, adicun:tristr)
-
-mts.fern.split <- split(mts.ferns.df, mts.ferns.df$site)
-
-mts.fern.split$H <- mts.fern.split$H[,-(1:2)]
-mts.fern.split$T <- mts.fern.split$T[,-(1:2)]
-mts.fern.split$R <- mts.fern.split$R[,-(1:2)]
-
-nh.f <- colnames(mts.fern.split$H[, colSums(mts.fern.split$H) > 0])
-nt.f <- colnames(mts.fern.split$T[, colSums(mts.fern.split$T) > 0])
-nr.f <- colnames(mts.fern.split$R[, colSums(mts.fern.split$R) > 0])
-
-spp.ferns.all <- unique(c(nh.f, nr.f, nt.f))
-ferns.all_sites <- Reduce(intersect, list(nh.f, nr.f, nt.f)) # spp in all three
-ferns.hira <- nh.f
-ferns.hira_only <- Reduce(setdiff, list(nh.f, nt.f, nr.f)) # spp only at Hira
-
-
-## ----extract_range_data, echo = FALSE-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-# Hirakimata ONLY
-hira_only.range <- extract.limits(mts.woody, woody.hira_only, elev)
-hira_only.ferns.range <- extract.limits(mts.ferns, ferns.hira_only, elev)
-
-# Species at Hirakimata and elsewhere
-
-mts.split <- mts.woody.df %>% split(mts.woody.df$site)
-
-mts.split$H <- mts.split$H[,-(1:2)]
-mts.split$T <- mts.split$T[,-(1:2)]
-mts.split$R <- mts.split$R[,-(1:2)]
-
-nh <- colnames(mts.split$H[, colSums(mts.split$H) > 0])
-nt <- colnames(mts.split$T[, colSums(mts.split$T) > 0])
-nr <- colnames(mts.split$R[, colSums(mts.split$R) > 0])
-
-spp.all <- unique(c(nh, nt, nr))  # species list for all three sites
-woody.all_sites <- Reduce(intersect, list(nh, nt, nr)) # spp present at all three sites
-woody.hira <- nh
-woody.hira_only <- Reduce(setdiff, list(nh, nt, nr)) # spp only at Hira
-
-# Species present at all three sites at 150 m and not above 500 m
-# spp.at.150 <-  colSums(mts.woody[elev == 150,]) == 3
-# spp.at.200 <-  colSums(mts.woody[elev == 200,]) == 3
-
-lowland.spp <- (colSums(mts.woody[elev == 150,]) == 3) + (colSums(mts.woody[elev == 200,]) == 3) > 0
-spp.notabv.450 <- colSums(mts.woody[elev %in% seq(550,600,50),]) == 0
-
-lowland.spp <- lowland.spp * spp.notabv.450
-lowland.spp <- names(lowland.spp[lowland.spp == TRUE]) 
-
-#woody.all_sites_150 <- names(mts.woody.df)[-1][]
-
-########################
-# Fern spp
-mts.ferns.df <- data.frame(mts.ferns)
-mts.ferns.df$site <- site
-
-mts.ferns.df <- mts.ferns.df %>% select(site, adicun:tristr)
-
-mts.fern.split <- split(mts.ferns.df, mts.ferns.df$site)
-
-mts.fern.split$H <- mts.fern.split$H[,-(1:2)]
-mts.fern.split$T <- mts.fern.split$T[,-(1:2)]
-mts.fern.split$R <- mts.fern.split$R[,-(1:2)]
-
-nh.f <- colnames(mts.fern.split$H[, colSums(mts.fern.split$H) > 0])
-nt.f <- colnames(mts.fern.split$T[, colSums(mts.fern.split$T) > 0])
-nr.f <- colnames(mts.fern.split$R[, colSums(mts.fern.split$R) > 0])
-
-spp.ferns.all <- unique(c(nh.f, nr.f, nt.f))
-ferns.all_sites <- Reduce(intersect, list(nh.f, nr.f, nt.f)) # spp in all three
-ferns.hira <- nh.f
-ferns.hira_only <- Reduce(setdiff, list(nh.f, nt.f, nr.f)) # spp only at Hira
-
-
-## ----extract_range_data, echo = FALSE-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-# Hirakimata ONLY
-hira_only.range <- extract.limits(mts.woody, woody.hira_only, elev)
-hira_only.ferns.range <- extract.limits(mts.ferns, ferns.hira_only, elev)
-
-# Species at Hirakimata and elsewhere
-# Using grep to ignore R and T
-hira.set <- grep(pattern = "H", rownames(mts.woody))
-
-hira.range <- extract.limits(mts.woody[hira.set,], woody.hira, elev)
-hira.ferns.range <- extract.limits(mts.ferns[hira.set,], ferns.hira, elev)
-
-## Present at ALL THREE mts (sites)
-all_sites.range <- extract.limits(mts.woody, woody.all_sites, elev)
-all_sites.ferns.range <- extract.limits(mts.ferns, ferns.all_sites, elev)
-
-
-## ----build_range_plots, echo = FALSE--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-pal <- RColorBrewer::brewer.pal(3, "Accent")   
-
-# Using grep to ignore R and T
-hira.set <- grep(pattern = "H", rownames(mts.woody))
-
-hira.range <- extract.limits(mts.woody[hira.set,], woody.hira, elev)
-hira.ferns.range <- extract.limits(mts.ferns[hira.set,], ferns.hira, elev)
-
-## Present at ALL THREE mts (sites)
-all_sites.range <- extract.limits(mts.woody, woody.all_sites, elev)
-all_sites.ferns.range <- extract.limits(mts.ferns, ferns.all_sites, elev)
-
-
-## ----build_range_plots, echo = FALSE--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-pal <- RColorBrewer::brewer.pal(3, "Accent")   
-
-## ----load_data, echo = FALSE----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-mts.woody <- read.csv("./data/woodyAltitude_rev.csv", header = T, row.names = 1)
-mts.ferns <- read.csv("./data/fernAltitude_rev.csv", header = T, row.names = 1)
-
-# get the site codes and elevations
-site <- str_sub(names(mts.woody), 1, 1)
-elev <- as.numeric(str_sub(names(mts.woody), 3, 5))
-
-# transpose and convert NAs to zero
-mts.woody <- t(mts.woody)
-mts.woody[is.na(mts.woody)] <- 0
-
-mts.ferns <- t(mts.ferns)
-mts.ferns[is.na(mts.ferns)] <- 0
-
-
-## ----map, echo = FALSE, message = FALSE, warning = FALSE------------------------------------------------------------------------------------------------------------------------------------------------------
-#coast <- read_sf("./data/nz_coast_NZTM")
-
-coast <- read_sf("./data/coast_poly_NZTM")
-#bd <- c(1741620, 5859550, 1834360,	6012920)
-#coast.gbi <- st_crop(coast, xmin = 1741620, ymin = 5859550, xmax = 1834360,	ymax = 6012920)
-
-places <- read_csv("./data/map_places.csv", col_types = "cddddfn")
-places.rg <- filter(places, gbi.loc == 0)
-places.gbi <- filter(places, gbi.loc == 1)
-
-
-rg.map <- ggplot(data = coast) +
-  geom_sf(col = "blue", fill = "#eeeeee") +
-  coord_sf(xlim = c(1741620, 1834360), ylim = c(5859550, 6012920), expand = FALSE) +
-  geom_point(data = places.rg, aes(x = long.tm, y = lat.tm, shape = sym), size = 4) +
-  geom_label_repel(data = places.rg, aes(x = long.tm, y = lat.tm, label = name), size = 4.5, alpha = 0.7) +
-  xlab("Latitude") +
-  ylab("Longitude") + 
-  annotation_scale(location = "bl", width_hint = 0.4) +
-  guides(shape = "none") +
-  theme_bw()
-
-gbi.map <- ggplot(data = coast) +
-  geom_sf(col = "blue", fill = "#eeeeee") +
-  coord_sf(xlim = c(1803169, 1832400), ylim = c(5971850, 6012920), expand = FALSE) +
-  geom_point(data = places.gbi, aes(x = long.tm, y = lat.tm, shape = sym), size = 4) +
-  geom_label_repel(data = places.gbi, aes(x = long.tm, y = lat.tm, label = name), size = 4.5, alpha = 0.7) +
-  xlab("Latitude") +
-  ylab("Longitude") + 
-  annotation_scale(location = "bl", width_hint = 0.4) +
-  guides(shape = "none") +
-  theme_bw()
-
-maps.sideby <- rg.map + gbi.map
-
-
-
-## ----richness, echo = FALSE, message = FALSE------------------------------------------------------------------------------------------------------------------------------------------------------------------
-all.data <- data.frame(elev = elev, site = site, woody = rowSums(mts.woody), ferns = rowSums(mts.ferns))
-
-source('./src/regrBuilder.r')
-
-elev.s.woody <- ggplot(woody.plot) +
-  geom_point(aes(x = elev, y = richness, col= site, shape = site), size = 2.5) +
-  scale_colour_brewer(type = "qual", name = "Maunga", labels = c("Hirikimata", "Ruahine", "Tataweka")) +
-  scale_fill_brewer(type = "qual", name = "Maunga", labels = c("Hirikimata", "Ruahine", "Tataweka")) +
-  scale_shape_manual(values = c(16,17, 15), name = "Maunga", labels = c("Hirikimata", "Ruahine", "Tataweka")) +  
-  labs(x = "Elevation (m)", y = "Species richness") +
-  geom_line(aes(x = elev, y = est, group = site, col = site), size = 1.2) +
-  geom_ribbon(aes(x = elev, ymin = est - se, ymax = est + se, group = site, fill = site), alpha = 0.2) +
-  ylim(0,70) +
-  theme_bw()
-
-elev.s.ferns <- ggplot(ferns.plot) +
-  geom_point(aes(x = elev, y = richness, col= site, shape = site), size = 2.5) +
-  scale_colour_brewer(type = "qual", name = "Maunga", labels = c("Hirikimata", "Ruahine", "Tataweka")) +
-  scale_fill_brewer(type = "qual", name = "Maunga", labels = c("Hirikimata", "Ruahine", "Tataweka")) +
-  scale_shape_manual(values = c(16,17, 15), name = "Maunga", labels = c("Hirikimata", "Ruahine", "Tataweka")) +  
-  labs(x = "Elevation (m)") +
-  geom_line(aes(x = elev, y = est, group = site, col = site), size = 1.2) +
-  geom_ribbon(aes(x = elev, ymin = est - se, ymax = est + se, group = site, fill = site), alpha = 0.2) +
-  ylim(0,70) +
-  theme_bw() +
-  theme(axis.title.y = element_blank())
-  
-elev.plots <- elev.s.woody + elev.s.ferns +
-  plot_annotation(tag_levels = "a") + plot_layout(guides = "collect") &
-   theme(legend.position = "bottom")
-  
-
-
-## ----dist_mtx, echo = FALSE-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-# bray-curtis distance matrix
-woody.dist <- vegdist(mts.woody, method = "bray")
-ferns.dist <- vegdist(mts.ferns, method = "bray")
-
-
-## ----woody_pairwise, echo = FALSE-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-woody.mts.dist.df <- data.frame(as.matrix(woody.dist)) %>%
-  rownames_to_column(var = "site_elev") %>%
-  pivot_longer(cols = -1) %>%
-  separate(site_elev, c("site1", "elev1")) %>%
-  separate(name, c("site2", "elev2")) %>%
-  distinct() %>%
-  mutate(same_elev = ifelse(elev1 == elev2 & site1 != site2 , 1, 0)) %>%
-  mutate(site_pair = paste0(site1, ".", site2))
-  
-woody.pairwise.bc <- woody.mts.dist.df %>%
-  filter(same_elev == 1) %>%
-  filter(site_pair == "R.H" | site_pair == "T.H" | site_pair == "T.R")
-
-woody.pairs.gg <- ggplot(woody.pairwise.bc) +
-  geom_point(aes(y = value, x = elev1, col = site_pair, shape = site_pair), size = 3) +
-  labs(x = "Elevation (m)", y = "Dissimilarity (Bray-Curtis)") +
-  scale_colour_brewer(type = "qual", name = "Site pair") +
-  ylim(0,1) +
-  guides(shape = "none") +
-  theme_bw()
-
-
-## ----ferns_pairwise, echo = FALSE-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-# Make a long version of the distance matrix
-ferns.mts.dist.df <- data.frame(as.matrix(ferns.dist)) %>%
-  rownames_to_column(var = "site_elev") %>%
-  pivot_longer(cols = -1) %>%
-  separate(site_elev, c("site1", "elev1")) %>%
-  separate(name, c("site2", "elev2")) %>%
-  distinct() %>%
-  mutate(same_elev = ifelse(elev1 == elev2 & site1 != site2 , 1, 0)) %>%
-  mutate(site_pair = paste0(site1, ".", site2))
-
-ferns.pairwise.bc <- ferns.mts.dist.df %>%
-  filter(same_elev == 1) %>%
-  filter(site_pair == "R.H" | site_pair == "T.H" | site_pair == "T.R")
-
-ferns.pairs.gg <- ggplot(ferns.pairwise.bc) +
-  geom_point(aes(y = value, x = elev1, col = site_pair, shape = site_pair), size = 3) +
-  labs(x = "Elevation (m)", y = "Dissimilarity (Bray-Curtis)") +
-  scale_colour_brewer(type = "qual", name = "Site pair") +
-  ylim(0,1) +
-  guides(shape = "none") +
-  theme_bw() +
-  theme(axis.title.y = element_blank())
-
-
-## ---- echo = FALSE--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-pair.dist.plot <- woody.pairs.gg + ferns.pairs.gg + plot_annotation(tag_levels = "a") + plot_layout(guides = "collect") &
- theme(legend.position = "bottom")
-
-
-## ----hac, echo = FALSE, warning = FALSE-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-pal <- RColorBrewer::brewer.pal(3, "Accent")
-
-woody.hcl <- hclust(woody.dist, method = "average")
-woody.hcl <- as.dendrogram(woody.hcl)
-
-# sort sites based on appearance in the dendrogram
-
-woody.hcl.col <- as.numeric(factor(site[order.dendrogram(woody.hcl)]))
-
-woody.hcl <- woody.hcl %>% 
-  set("labels_colors", pal[woody.hcl.col]) %>%
-  set("leaves_pch", 19) %>%
-  set("leaves_col", pal[woody.hcl.col]) %>%
-  set("leaves_cex", 2)
-
-woody.hcl.gg <- as.ggdend(woody.hcl) %>% 
-  ggplot() + 
-  scale_x_discrete(labels = NULL, breaks = NULL) + 
-  labs(x = "", y = "Distance") + 
-  theme_bw()
-## Now the ferns
-ferns.hcl <- hclust(ferns.dist, method = "average")
-
-ferns.hcl <- as.dendrogram(ferns.hcl)
-ferns.hcl.col <- as.numeric(factor(site[order.dendrogram(ferns.hcl)]))
-
-
-ferns.hcl <- ferns.hcl %>% 
-  set("labels_colors", pal[ferns.hcl.col]) %>%
-  set("leaves_pch", 19) %>%
-  set("leaves_col", pal[ferns.hcl.col]) %>%
-  set("leaves_cex", 2)
-
-ferns.hcl.gg <- as.ggdend(ferns.hcl) %>% 
-ggplot() + 
-scale_x_discrete(labels = NULL, breaks = NULL) +
- labs(x = "", y = "Distance") + 
- theme_bw()
-
-hcl.plots <- (woody.hcl.gg + ferns.hcl.gg) + 
-  plot_annotation(tag_levels = "a")
-
-
-## ----nmds, echo = FALSE, message = FALSE----------------------------------------------------------------------------------------------------------------------------------------------------------------------
-# nMDS
-woody.mds <- metaMDS(mts.woody, distance = "bray", wascores = TRUE, autotransform = FALSE, k = 2, trace = 0)
-
-#plot(woody.mds, type = "t", display = "sites")
-woody.mds.sc <- data.frame(scores(woody.mds), site.code = rownames(mts.woody), site = site, elev = elev)
-
-woody.stress.lbl <- paste("Stress = ", round(woody.mds$stress, 4))
-# plot.mds.gg <- function(mds, txt.col = "blue", txt.x = 0, txt.y = 0, clusters = NULL, labels = FALSE)
-
-woody.mds.simp.gg <- plot.mds.gg(woody.mds, clusters = site, txt.x = 1, txt.y = 0.7) +
-  geom_text_repel(data = woody.mds.sc, aes(x = NMDS1, y = NMDS2, , label = elev, col = site)) +
+  geom_text_repel(data = woody.mds.sc, aes(x = NMDS1, y = NMDS2, label = elev, col = site)) +
   scale_colour_brewer(type = "qual", name = "Site", labels = c("Hirikimata", "Ruahine", "Tataweka")) +
   guides(shape = "none") +
   theme(legend.position = "bottom")
@@ -629,18 +245,19 @@ source("./src/dispLocAnalysis.r")
 mds.plots <- woody.mds.simp.gg + ferns.mds.simp.gg +  
 plot_annotation(tag_levels = 'a')
 
-
+## ---- echo = FALSE--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ## ----extract_names, echo = FALSE------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-# Woody spp
+
+# Woody species occurences
 mts.woody.df <- data.frame(mts.woody)
 mts.woody.df <- mts.woody.df %>%
   mutate(site_synth = ifelse(site == "H", "H", "T_R")) %>%
   rownames_to_column(var = "site_elev") %>%
   separate(site_elev, into = c("site", "elev"))
 
-mts.split <- mts.woody.df %>% 
+mts.split <- mts.woody.df  %>%
   select(site, agaaus:weisil) %>% 
-  split(mts.woody.df$site)
+  split(site)
 
 mts.split$H <- mts.split$H[,-(1:2)]
 mts.split$T <- mts.split$T[,-(1:2)]
@@ -656,6 +273,9 @@ woody.hira <- nh
 woody.hira_only <- Reduce(setdiff, list(nh, nt, nr)) # spp only at Hira
 
 # Species present at all three sites at 150 m and not above 500 m
+# spp.at.150 <-  colSums(mts.woody[elev == 150,]) == 3
+# spp.at.200 <-  colSums(mts.woody[elev == 200,]) == 3
+
 lowland.spp <- (colSums(mts.woody[elev == 150,]) == 3) + (colSums(mts.woody[elev == 200,]) == 3) > 0
 spp.notabv.450 <- colSums(mts.woody[elev %in% seq(550,600,50),]) == 0
 
@@ -670,10 +290,10 @@ mts.ferns.df <- data.frame(mts.ferns)
 mts.ferns.df$site <- site
 
 mts.fern.split <- mts.ferns.df %>% 
-  select(site, adicun:tristr) %>% 
-  split(mts.ferns.df$site)
+  select(site, adicun:tristr) %>%
+  split(site)
 
-mts.fern.split$H <- mts.fern.split$H[,-(1:2)]
+mts.fern.split$H <- mts.ferns.split$H[,-(1:2)]
 mts.fern.split$T <- mts.fern.split$T[,-(1:2)]
 mts.fern.split$R <- mts.fern.split$R[,-(1:2)]
 
@@ -726,7 +346,7 @@ hira.fern.rg <- ggplot(data = hira_only.ferns.range$elev.lims) +
 hira.e <- hira.range$elev.lims[hira.range$elev.lims$spp %in% str_to_title(lowland.spp), ]
 all.e <- all_sites.range$elev.lims[all_sites.range$elev.lims$spp %in% str_to_title(lowland.spp), ]
 
-# Plots ordered by upper limit on Hirikimata
+# Plots ordered by upper limit on Hirikimata  /"
 hira.e$spp <- fct_reorder(hira.e$spp, hira.e$max, min)
 all.e$spp <- fct_reorder(all.e$spp, hira.e$max, min)
 
@@ -771,33 +391,35 @@ all.range.plots <- (all.wdy.rg | all.fern.rg) +
 
 
 
-######### Export to SVG
-library(svglite)
+# ######### Export to SVG
+# library(svglite)
 
-svglite("../ms/fig/siteMap.svg", width = 5.85, height = 4.15, bg = "transparent")
-  maps.sideby
-dev.off()
+# svglite("../ms/fig/siteMap.svg", width = 5.85, height = 4.15, bg = "transparent")
+#   maps.sideby
+# dev.off()
 
-svglite("../ms/fig/elevPlots.svg", width = 5.85, height = 4.15, bg = "transparent")
-  elev.plots
-dev.off()
+# svglite("../ms/fig/elevPlots.svg", width = 5.85, height = 4.15, bg = "transparent")
+#   elev.plots
+# dev.off()
 
-svglite("../ms/fig/hclPlots.svg", width = 5.85, height = 4.15,bg = "transparent")
-  hcl.plots
-dev.off()
+# svglite("../ms/fig/hclPlots.svg", width = 5.85, height = 4.15,bg = "transparent")
+#   hcl.plots
+# dev.off()
 
-svglite("../ms/fig/pairwiseDist.svg", width = 5.85, height = 4.15, bg = "transparent")
-  pair.dist.plot
-dev.off()
+# svglite("../ms/fig/pairwiseDist.svg", width = 5.85, height = 4.15, bg = "transparent")
+#   pair.dist.plot
+# dev.off()
 
-svglite("../ms/fig/mdsPlots.svg", width = 5.85, height = 4.15, bg = "transparent")
-  mds.plots
-dev.off()
+# svglite("../ms/fig/mdsPlots.svg", width = 11.7, height = 8.3, bg = "transparent")
+#   mds.plots
+# dev.off()
 
-svglite("../ms/fig/hiraRange.svg", width = 5.85, height = 4.15, bg = "transparent")
-  hira.range.plots
-dev.off()
+# svglite("../ms/fig/hiraRange.svg", width = 5.85, height = 4.15, bg = "transparent")
+#   hira.range.plots
+# dev.off()
 
-svglite("../ms/fig/allSitesRange.svg", width = 5.85, height = 4.15, bg = "transparent")
-  all.range.plots
-dev.off()
+# svglite("../ms/fig/allSitesRange.svg", width = 5.85, height = 4.15, bg = "transparent")
+#   all.range.plots
+# dev.off()
+
+
