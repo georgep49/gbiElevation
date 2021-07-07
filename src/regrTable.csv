@@ -1,0 +1,13 @@
+Site,Group,Term,Estimate,Std error,z-statistic,p,AICc
+Hirakimata,Woody,(Intercept),4.351,0.122,35.704,0.000,
+Hirakimata,Woody,Elevation,-0.001,0.000,-4.283,0.000,66.929
+Hirakimata,Ferns,(Intercept),3.931,0.173,22.724,0.000,
+Hirakimata,Ferns,Elevation,-0.002,0.000,-4.940,0.000,55.333
+Ruahine,Woody,(Intercept),4.232,0.187,22.683,0.000,
+Ruahine,Woody,Elevation,-0.001,0.001,-1.557,0.120,43.368
+Ruahine,Ferns,(Intercept),3.289,0.289,11.395,0.000,
+Ruahine,Ferns,Elevation,-0.001,0.001,-0.713,0.476,38.301
+Tataweka,Woody,(Intercept),4.379,0.150,29.153,0.000,
+Tataweka,Woody,Elevation,-0.002,0.000,-3.932,0.000,54.795
+Tataweka,Ferns,(Intercept),3.210,0.260,12.364,0.000,
+Tataweka,Ferns,Elevation,-0.002,0.001,-1.930,0.054,48.952
