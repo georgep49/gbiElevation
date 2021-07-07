@@ -33,16 +33,18 @@ mts.ferns[is.na(mts.ferns)] <- 0
 
 coast <- read_sf("./data/coast_poly_NZTM")
 #bd <- c(1741620, 5859550, 1834360,	6012920)
-#coast.gbi <- st_crop(coast, xmin = 1741620, ymin = 5859550, xmax = 1834360,	ymax = 6012920)
+#
+coast.akld <- st_crop(coast, xmin = 1741620, ymin = 5859550, xmax = 1834360,	ymax = 6012920)
+coast.gbi <- st_crop(coast.akld, xmin = 1803169, ymin = 5971850, xmax = 6012920,	ymax = 6012920)
 
 places <- read_csv("./data/map_places.csv", col_types = "cddddfn")
 places.rg <- filter(places, gbi.loc == 0)
 places.gbi <- filter(places, gbi.loc == 1)
 
 
-rg.map <- ggplot(data = coast) +
+rg.map <- ggplot(data = coast.akld) +
   geom_sf(col = "blue", fill = "#eeeeee") +
-  coord_sf(xlim = c(1741620, 1834360), ylim = c(5859550, 6012920), expand = FALSE) +
+  coord_sf(expand = FALSE) +
   geom_point(data = places.rg, aes(x = long.tm, y = lat.tm, shape = sym), size = 4) +
   geom_label_repel(data = places.rg, aes(x = long.tm, y = lat.tm, label = name), size = 4.5, alpha = 0.7) +
   xlab("Latitude") +
@@ -51,9 +53,9 @@ rg.map <- ggplot(data = coast) +
   guides(shape = "none") +
   theme_bw()
 
-gbi.map <- ggplot(data = coast) +
+gbi.map <- ggplot(data = coast.gbi) +
   geom_sf(col = "blue", fill = "#eeeeee") +
-  coord_sf(xlim = c(1803169, 1832400), ylim = c(5971850, 6012920), expand = FALSE) +
+  coord_sf(expand = FALSE) +
   geom_point(data = places.gbi, aes(x = long.tm, y = lat.tm, shape = sym), size = 4) +
   geom_label_repel(data = places.gbi, aes(x = long.tm, y = lat.tm, label = name), size = 4.5, alpha = 0.7) +
   xlab("Latitude") +
@@ -75,9 +77,9 @@ woody.plot <- filter(all.data.long, taxa == "woody")
 elev.s.woody <- ggplot(woody.plot) +
   geom_point(aes(x = elev, y = richness, col= site, shape = site), size = 2.5) +
   geom_smooth(aes(x = elev, y = richness), method="glm", method.args=list(family="poisson")) +
-  scale_colour_brewer(type = "qual", name = "Maunga", labels = c("Hirikimata", "Ruahine", "Tataweka")) +
-  scale_fill_brewer(type = "qual", name = "Maunga", labels = c("Hirikimata", "Ruahine", "Tataweka")) +
-  scale_shape_manual(values = c(16,17, 15), name = "Maunga", labels = c("Hirikimata", "Ruahine", "Tataweka")) +  
+  scale_colour_brewer(type = "qual", name = "Site", labels = c("Hirikimata", "Ruahine", "Tataweka")) +
+  scale_fill_brewer(type = "qual", name = "Site", labels = c("Hirikimata", "Ruahine", "Tataweka")) +
+  scale_shape_manual(values = c(16,17, 15), name = "Site", labels = c("Hirikimata", "Ruahine", "Tataweka")) +  
   labs(x = "Elevation (m)", y = "Species richness") +
   # geom_line(aes(x = elev, y = est, group = site, col = site), size = 1.2) +
   # geom_ribbon(aes(x = elev, ymin = est - se, ymax = est + se, group = site, fill = site), alpha = 0.2) +
@@ -88,17 +90,18 @@ ferns.plot <- filter(all.data.long, taxa == "ferns")
 elev.s.ferns <- ggplot(ferns.plot) +
   geom_point(aes(x = elev, y = richness, col= site, shape = site), size = 2.5) +
   geom_smooth(aes(x = elev, y = richness), method="glm", method.args=list(family="poisson")) +
-  scale_colour_brewer(type = "qual", name = "Maunga", labels = c("Hirikimata", "Ruahine", "Tataweka")) +
-  scale_fill_brewer(type = "qual", name = "Maunga", labels = c("Hirikimata", "Ruahine", "Tataweka")) +
-  scale_shape_manual(values = c(16,17, 15), name = "Maunga", labels = c("Hirikimata", "Ruahine", "Tataweka")) +  
+  scale_colour_brewer(type = "qual", name = "Site", labels = c("Hirikimata", "Ruahine", "Tataweka")) +
+  scale_fill_brewer(type = "qual", name = "Site", labels = c("Hirikimata", "Ruahine", "Tataweka")) +
+  scale_shape_manual(values = c(16,17, 15), name = "Site", labels = c("Hirikimata", "Ruahine", "Tataweka")) +  
   labs(x = "Elevation (m)") +
   ylim(0,70) +
   theme_bw() +
   theme(axis.title.y = element_blank())
   
 elev.plots <- elev.s.woody + elev.s.ferns +
-  plot_annotation(tag_levels = "a") + plot_layout(guides = "collect") &
-   theme(legend.position = "bottom")
+  plot_annotation(tag_levels = "a") + 
+  plot_layout(guides = "collect") &
+  theme(legend.position = "bottom")
 
 ## ----dist_mtx, echo = FALSE-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # bray-curtis distance matrix
@@ -155,8 +158,10 @@ ferns.pairs.gg <- ggplot(ferns.pairwise.bc) +
 
 
 ## ---- echo = FALSE--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-pair.dist.plot <- woody.pairs.gg + ferns.pairs.gg + plot_annotation(tag_levels = "a") + plot_layout(guides = "collect") &
- theme(legend.position = "bottom")
+pair.dist.plot <- (woody.pairs.gg + ferns.pairs.gg) + 
+  plot_annotation(tag_levels = "a") + 
+  plot_layout(guides = "collect") &
+  theme(legend.position = "bottom")
 
 
 ## ----hac, echo = FALSE, warning = FALSE-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -242,19 +247,19 @@ source("./src/dispLocAnalysis.r")
 mds.plots <- woody.mds.simp.gg + ferns.mds.simp.gg +  
 plot_annotation(tag_levels = 'a')
 
-
+## ---- echo = FALSE--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ## ----extract_names, echo = FALSE------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-# Woody spp
+
+# Woody species occurences
 mts.woody.df <- data.frame(mts.woody)
 mts.woody.df <- mts.woody.df %>%
-mutate(site_synth = ifelse(site == "H", "H", "T_R")) %>%
-rownames_to_column(var = "site_elev") %>%
-separate(site_elev, into = c("site", "elev"))
+  mutate(site_synth = ifelse(site == "H", "H", "T_R")) %>%
+  rownames_to_column(var = "site_elev") %>%
+  separate(site_elev, into = c("site", "elev"))
 
-mts.woody.df <- mts.woody.df %>% select(site, agaaus:weisil)knitr::opts_chunk$set(echo = TRUE)
-
-
-mts.split <- mts.woody.df %>% split(mts.woody.df$site)
+mts.split <- mts.woody.df  %>%
+  select(site, agaaus:weisil) %>% 
+  split(site)
 
 mts.split$H <- mts.split$H[,-(1:2)]
 mts.split$T <- mts.split$T[,-(1:2)]
@@ -286,11 +291,11 @@ lowland.spp <- names(lowland.spp[lowland.spp == TRUE])
 mts.ferns.df <- data.frame(mts.ferns)
 mts.ferns.df$site <- site
 
-mts.ferns.df <- mts.ferns.df %>% select(site, adicun:tristr)
+mts.fern.split <- mts.ferns.df %>% 
+  select(site, adicun:tristr) %>%
+  split(site)
 
-mts.fern.split <- split(mts.ferns.df, mts.ferns.df$site)
-
-mts.fern.split$H <- mts.fern.split$H[,-(1:2)]
+mts.fern.split$H <- mts.ferns.split$H[,-(1:2)]
 mts.fern.split$T <- mts.fern.split$T[,-(1:2)]
 mts.fern.split$R <- mts.fern.split$R[,-(1:2)]
 
@@ -304,7 +309,13 @@ ferns.hira <- nh.f
 ferns.hira_only <- Reduce(setdiff, list(nh.f, nt.f, nr.f)) # spp only at Hira
 
 
-## ----build_range_plots, echo = FALSE--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+## ----extract_range_data, echo = FALSE-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+# Hirakimata ONLY
+hira_only.range <- extract.limits(mts.woody, woody.hira_only, elev)
+hira_only.ferns.range <- extract.limits(mts.ferns, ferns.hira_only, elev)
+
+# Species at Hirakimata and elsewhere
 # Using grep to ignore R and T
 hira.set <- grep(pattern = "H", rownames(mts.woody))
 
@@ -318,6 +329,7 @@ all_sites.ferns.range <- extract.limits(mts.ferns, ferns.all_sites, elev)
 
 ## ----build_range_plots, echo = FALSE--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 pal <- RColorBrewer::brewer.pal(3, "Accent")   
+
 
 # ordering by min
 hira.wdy.rg <- ggplot(data = hira_only.range$elev.lims) +
@@ -336,7 +348,7 @@ hira.fern.rg <- ggplot(data = hira_only.ferns.range$elev.lims) +
 hira.e <- hira.range$elev.lims[hira.range$elev.lims$spp %in% str_to_title(lowland.spp), ]
 all.e <- all_sites.range$elev.lims[all_sites.range$elev.lims$spp %in% str_to_title(lowland.spp), ]
 
-# Plots ordered by upper limit on Hirikimata
+# Plots ordered by upper limit on Hirikimata  /"
 hira.e$spp <- fct_reorder(hira.e$spp, hira.e$max, min)
 all.e$spp <- fct_reorder(all.e$spp, hira.e$max, min)
 
@@ -381,33 +393,35 @@ all.range.plots <- (all.wdy.rg | all.fern.rg) +
 
 
 
-######### Export to SVG
-library(svglite)
+# ######### Export to SVG
+# library(svglite)
 
-svglite("../ms/fig/siteMap.svg", width = 5.85, height = 4.15, bg = "transparent")
-  maps.sideby
-dev.off()
+# svglite("../ms/fig/siteMap.svg", width = 5.85, height = 4.15, bg = "transparent")
+#   maps.sideby
+# dev.off()
 
-svglite("../ms/fig/elevPlots_global.svg", width = 5.85, height = 4.15, bg = "transparent")
-  elev.plots
-dev.off()
+# svglite("../ms/fig/elevPlots.svg", width = 5.85, height = 4.15, bg = "transparent")
+#   elev.plots
+# dev.off()
 
-svglite("../ms/fig/hclPlots.svg", width = 5.85, height = 4.15,bg = "transparent")
-  hcl.plots
-dev.off()
+# svglite("../ms/fig/hclPlots.svg", width = 5.85, height = 4.15,bg = "transparent")
+#   hcl.plots
+# dev.off()
 
-svglite("../ms/fig/pairwiseDist.svg", width = 5.85, height = 4.15, bg = "transparent")
-  pair.dist.plot
-dev.off()
+# svglite("../ms/fig/pairwiseDist.svg", width = 5.85, height = 4.15, bg = "transparent")
+#   pair.dist.plot
+# dev.off()
 
-svglite("../ms/fig/mdsPlots.svg", width = 11.7, height = 8.3, bg = "transparent")
-  mds.plots
-dev.off()
+# svglite("../ms/fig/mdsPlots.svg", width = 11.7, height = 8.3, bg = "transparent")
+#   mds.plots
+# dev.off()
 
-svglite("../ms/fig/hiraRange.svg", width = 5.85, height = 4.15, bg = "transparent")
-  hira.range.plots
-dev.off()
+# svglite("../ms/fig/hiraRange.svg", width = 5.85, height = 4.15, bg = "transparent")
+#   hira.range.plots
+# dev.off()
 
-svglite("../ms/fig/allSitesRange.svg", width = 5.85, height = 4.15, bg = "transparent")
-  all.range.plots
-dev.off()
+# svglite("../ms/fig/allSitesRange.svg", width = 5.85, height = 4.15, bg = "transparent")
+#   all.range.plots
+# dev.off()
+
+
