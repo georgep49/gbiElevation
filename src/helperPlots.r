@@ -13,11 +13,11 @@ mtx.descr <- function(X)
        dbi = round(dbi, 3))
 }
 
-plot.mds.gg <- function(mds, txt.col = 'blue', txt.x = 0, txt.y = 0, clusters = NULL, labels = FALSE)
+plot.mds.gg <- function(mds, txt.col = 'blue', txt.x = 0, txt.y = 0, clusters = NULL, labels = FALSE, disp = "sites")
 {
   require(tidyverse)
   
-  xy <- data.frame(scores(mds)) %>%
+  xy <- data.frame(scores(mds, display = disp)) %>%
     rownames_to_column(var = 'site')
   n <- dim(scores(mds))[1]
   
@@ -53,7 +53,7 @@ plot.mds.gg <- function(mds, txt.col = 'blue', txt.x = 0, txt.y = 0, clusters = 
 }
 
 # Function to extract the elevation range that each spp occurs over
-extract.limits <- function(sppsite, spp.list, elev)
+extract.limits <- function(sppsite, spp.list, elev)  
 {
   e.min <- function(x) { min(elev[which (x != 0)]) }  # assume pres-absence
   e.max <- function(x) { max(elev[which (x != 0)]) }  
@@ -76,17 +76,31 @@ extract.limits <- function(sppsite, spp.list, elev)
   list(elev.lims = elev.rg, elev.lims.sgl = elev.rg.s)
 }
 
-# get.elevation.limits <- function(sppsite, spp.list, elev)
-# {
-#   sppsite <- sppsite[, spp.list]
-#   sppsite <- sppsite[rowSums(sppsite) > 0, ]
-#   
-#   sppsite <- as.data.frame(sppsite) %>%
-#     rownames_to_column(var = "site.elev") %>%
-#     separate(col = "site.elev", into = c("site", "elev")) %>%
-#     mutate(elev = as.numeric(elev)) %>%
-#     arrange(elev)
-# 
-#   e.range <- extract.limits(sppsite, elev)
-#   e.range
-# }  
+get.elevation.limits <- function(sppsite, spp.list)
+{
+
+  sppsite <- as.data.frame(sppsite) %>%
+    rownames_to_column(var = "site.elev") %>%
+    separate(col = "site.elev", into = c("site", "elev")) %>%
+    mutate(elev = as.numeric(elev)) %>%
+    pivot_longer(cols = -c("site", "elev"), names_to = "species")
+
+  sppsite <- sppsite %>%
+      filter(species %in% spp.list, value == 1)
+  
+  spp_range <- sppsite %>% 
+    group_by(species, site) %>%
+    summarise(min_elev = min(elev), max_elev = max(elev)) %>%
+    mutate(n_sites = n())  %>%
+    mutate(hirak = ifelse(site == "H", TRUE, FALSE)) %>%
+    mutate(single = ifelse(min_elev == max_elev, TRUE, FALSE)) %>%
+    mutate(species = upper_n(species, 3)) %>%
+    ungroup()
+    
+  spp_range
+}
+
+upper_n <- function(string, n = 1)
+{
+  str_c(toupper(substring(string, 1, 3)), substring(string, n + 1))
+}  

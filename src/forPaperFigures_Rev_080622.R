@@ -13,8 +13,8 @@ library(ggspatial)
 source("./src/helperPlots.r")
 
 ## ----load_data, echo = FALSE----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-mts.woody <- read.csv("./data/woodyAltitude_rev2.csv", header = T, row.names = 1)
-mts.ferns <- read.csv("./data/fernAltitude_rev2.csv", header = T, row.names = 1)
+mts.woody <- read.csv("./data/woodyAltitude_final.csv", header = T, row.names = 1)
+mts.ferns <- read.csv("./data/fernAltitude_final.csv", header = T, row.names = 1)
 
 # get the site codes and elevations
 site <- str_sub(names(mts.woody), 1, 1)
@@ -244,183 +244,173 @@ ferns.mds.simp.gg <- plot.mds.gg(ferns.mds, clusters = site, txt.x = 0.7, txt.y 
 
 source("./src/dispLocAnalysis.r")
 
-## ---- echo = FALSE--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+## ----
 mds.plots <- woody.mds.simp.gg + ferns.mds.simp.gg +  
 plot_annotation(tag_levels = 'a')
 
-## ---- echo = FALSE--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-## ----extract_names, echo = FALSE------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-# Woody species occurences
-mts.woody.df <- data.frame(mts.woody)
-mts.woody.df <- mts.woody.df %>%
-  mutate(site_synth = ifelse(site == "H", "H", "T_R")) %>%
-  rownames_to_column(var = "site_elev") %>%
-  separate(site_elev, into = c("site", "elev"))
+##########################################################
+# Woody species occurrences
 
-mts.split <- mts.woody.df  %>%
-  select(site, agaaus:weisil) %>% 
-  split(site)
+# Get ranges across all woody species, all sites
+spp.list <- colnames(mts.woody)
+woody.ranges <- get.elevation.limits(mts.woody, spp.list)
 
-mts.split$H <- mts.split$H[,-(1:2)]
-mts.split$T <- mts.split$T[,-(1:2)]
-mts.split$R <- mts.split$R[,-(1:2)]
+spp_at_h <- woody.ranges %>%
+  filter(site == "H") %>%
+  pull(species)
 
-nh <- colnames(mts.split$H[, colSums(mts.split$H) > 0])
-nt <- colnames(mts.split$T[, colSums(mts.split$T) > 0])
-nr <- colnames(mts.split$R[, colSums(mts.split$R) > 0])
+spp_at_t <- woody.ranges %>%
+  filter(site == "T") %>%
+  pull(species)
 
-spp.all <- unique(c(nh, nt, nr))  # species list for all three sites
-woody.all_sites <- Reduce(intersect, list(nh, nt, nr)) # spp present at all three sites
-woody.hira <- nh
-woody.hira_only <- Reduce(setdiff, list(nh, nt, nr)) # spp only at Hira
+spp_at_r <- woody.ranges %>%
+  filter(site == "R") %>%
+  pull(species)
 
-# Species present at all three sites at 150 m and not above 500 m
-# spp.at.150 <-  colSums(mts.woody[elev == 150,]) == 3
-# spp.at.200 <-  colSums(mts.woody[elev == 200,]) == 3
+# spp present at all three sites
+spp_at_all <- Reduce(intersect, list(spp_at_h, spp_at_t, spp_at_r)) 
 
+# spp only at Hira
+spp_at_hira_only <- Reduce(setdiff, list(spp_at_h, spp_at_t, spp_at_r)) 
+
+# species at both T and R (and poss H)
+spp_at_tr <- union(spp_at_t, spp_at_r) # spp at T and R
+
+# get list of lowland species: present at 150 and 200 not above 450
 lowland.spp <- (colSums(mts.woody[elev == 150,]) == 3) + (colSums(mts.woody[elev == 200,]) == 3) > 0
 spp.notabv.450 <- colSums(mts.woody[elev %in% seq(550,600,50),]) == 0
 
 lowland.spp <- lowland.spp * spp.notabv.450
 lowland.spp <- names(lowland.spp[lowland.spp == TRUE]) 
 
-#woody.all_sites_150 <- names(mts.woody.df)[-1][]
-
 ########################
 # Fern spp
-mts.ferns.df <- data.frame(mts.ferns)
-mts.ferns.df$site <- site
 
-mts.fern.split <- mts.ferns.df %>% 
-  select(site, adicun:tristr) %>%
-  split(site)
+f.spp.list <- colnames(mts.ferns)
+fern.ranges <- get.elevation.limits(mts.ferns, f.spp.list)
 
-mts.fern.split$H <- mts.fern.split$H[,-(1:2)]
-mts.fern.split$T <- mts.fern.split$T[,-(1:2)]
-mts.fern.split$R <- mts.fern.split$R[,-(1:2)]
+fspp_at_h <- fern.ranges %>%
+  filter(site == "H") %>%
+  pull(species)
 
-nh.f <- colnames(mts.fern.split$H[, colSums(mts.fern.split$H) > 0])
-nt.f <- colnames(mts.fern.split$T[, colSums(mts.fern.split$T) > 0])
-nr.f <- colnames(mts.fern.split$R[, colSums(mts.fern.split$R) > 0])
+fspp_at_t <- fern.ranges %>%
+  filter(site == "T") %>%
+  pull(species)
 
-spp.ferns.all <- unique(c(nh.f, nr.f, nt.f))
-ferns.all_sites <- Reduce(intersect, list(nh.f, nr.f, nt.f)) # spp in all three
-ferns.hira <- nh.f
-ferns.hira_only <- Reduce(setdiff, list(nh.f, nt.f, nr.f)) # spp only at Hira
+fspp_at_r <- fern.ranges %>%
+  filter(site == "R") %>%
+  pull(species)
 
+# spp present at all three sites
+fspp_at_all <- Reduce(intersect, list(fspp_at_h, fspp_at_t, fspp_at_r)) 
 
-## ----extract_range_data, echo = FALSE-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# spp only at Hira
+fspp_at_hira_only <- Reduce(setdiff, list(fspp_at_h, fspp_at_t, fspp_at_r)) 
 
-# Hirakimata ONLY
-hira_only.range <- extract.limits(mts.woody, woody.hira_only, elev)
-hira_only.ferns.range <- extract.limits(mts.ferns, ferns.hira_only, elev)
+# species at both T and R (and poss H)
+fspp_at_tr <- union(fspp_at_t, fspp_at_r) # spp at T and R
 
-# Species at Hirakimata and elsewhere
-# Using grep to ignore R and T
-hira.set <- grep(pattern = "H", rownames(mts.woody))
+# get list of lowland species: present at 150 and 200 not above 450
+lowland.f.spp <- (colSums(mts.ferns[elev == 150,]) == 3) + (colSums(mts.ferns[elev == 200,]) == 3) > 0
+fspp.notabv.450 <- colSums(mts.ferns[elev %in% seq(550,600,50),]) == 0
 
-hira.range <- extract.limits(mts.woody[hira.set,], woody.hira, elev)
-hira.ferns.range <- extract.limits(mts.ferns[hira.set,], ferns.hira, elev)
+lowland.f.spp <- lowland.f.spp * fspp.notabv.450
+lowland.f.spp <- names(lowland.f.spp[lowland.f.spp == TRUE]) 
+## ----extract_range_data, echo = FALSE------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-## Present at ALL THREE mts (sites)
-all_sites.range <- extract.limits(mts.woody, woody.all_sites, elev)
-all_sites.ferns.range <- extract.limits(mts.ferns, ferns.all_sites, elev)
-
-
-## ----build_range_plots, echo = FALSE--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 pal <- RColorBrewer::brewer.pal(3, "Accent")   
 
-
 # ordering by min
-hira.wdy.rg <- ggplot(data = hira_only.range$elev.lims) +
-  geom_segment(aes(x = min, xend = max, y = spp, yend = spp), size = 3) +
-  geom_point(data = hira_only.range$elev.lims.sgl, aes(x = min, y = spp), shape = 3) +
+hira_only.range <- woody.ranges %>%
+  filter(species %in% spp_at_hira_only)
+hira_only.range$species <- fct_reorder(hira_only.range$species, hira_only.range$min_elev, min)
+
+hira_f_only.range <- fern.ranges %>%
+  filter(species %in% fspp_at_hira_only)
+hira_f_only.range$species <- fct_reorder(hira_f_only.range$species, hira_f_only.range$min_elev, min)
+
+
+hira.wdy.rg <- ggplot(data = hira_only.range) +
+  geom_segment(aes(x = min_elev, xend = max_elev, y = species, yend = species), size = 3) +
+  geom_point(data = hira_only.range %>% filter(single == TRUE), aes(x = min_elev, y = species), shape = 3) +
   labs(x = "Elevation (m)", y = "Species") +
   theme_bw()
 
-hira.fern.rg <- ggplot(data = hira_only.ferns.range$elev.lims) +
-  geom_segment(aes(x = min, xend = max, y = spp, yend = spp), size = 3) +
-  geom_point(data = hira_only.ferns.range$elev.lims.sgl, aes(x = min, y = spp), shape = 3) +
+hira.fern.rg <- ggplot(data = hira_f_only.range) +
+  geom_segment(aes(x = min_elev, xend = max_elev, y = species, yend = species), size = 3) +
+  geom_point(data = hira_f_only.range %>% filter(single == TRUE), aes(x = min_elev, y = species), shape = 3) +
   labs(x = "Elevation (m)", y = "Species") +
   theme_bw()
 
-# Extract the spp at Hira also present elsewhere (as may have different range) - in both cases have to be at 150 m
-hira.e <- hira.range$elev.lims[hira.range$elev.lims$spp %in% str_to_title(lowland.spp), ]
-all.e <- all_sites.range$elev.lims[all_sites.range$elev.lims$spp %in% str_to_title(lowland.spp), ]
+####
+# Extract the spp at Hira also present elsewhere (as may have different range) - have to be "lowland species"
+woody.low.all <- woody.ranges %>%
+  filter(n_sites == 3, species %in% upper_n(lowland.spp, 3))
 
-# Plots ordered by upper limit on Hirikimata
-hira.e$spp <- fct_reorder(hira.e$spp, hira.e$max, min)
-all.e$spp <- fct_reorder(all.e$spp, hira.e$max, min)
-
-# Spp at just one site at H
+hira.e <- woody.low.all %>% filter(hirak == TRUE)
 hira.sgl.e <- filter(hira.e, single == 1)
 
-all.wdy.rg <- ggplot() +
-  geom_segment(data = all.e, aes(x = min, xend = max, y = spp, yend = spp), size = 1.5, col = "grey") +
-  geom_segment(data = hira.e, aes(x = min, xend = max, y = spp, yend = spp), size = 1.5,  col = pal[1]) +
-  geom_point(data = hira.sgl.e, aes(y = spp, x = min), size = 2,  col = pal[1]) +
-  labs(x = "Elevation (m)", y = "Species") +
-  theme_bw()
+all.e <- woody.low.all %>%
+  filter(hirak == FALSE) %>%
+  group_by(species) %>%
+  summarise(min_elev = min(min_elev), max_elev = max(max_elev)) %>%
+  ungroup()
 
-# And now the fern taxa
-hira.f.e <- hira.ferns.range$elev.lims[hira.ferns.range$elev.lims$spp %in% str_to_title(ferns.all_sites), ]
-all.f.e <- all_sites.ferns.range$elev.lims
+# Plots ordered by upper limit on Hirikimata
+hira.e$species <- fct_reorder(hira.e$species, hira.e$max_elev, min)
+all.e$species <- fct_reorder(all.e$species, hira.e$max_elev, min)
 
-hira.f.e$spp <- fct_reorder(hira.f.e$spp, hira.f.e$max, min)
-all.f.e$spp <- fct_reorder(all.f.e$spp, hira.f.e$max, min)  
-
-# Spp at just one site at H
-hira.sgl.f.e <- filter(hira.f.e, single == 1)
-
-all.fern.rg <- ggplot() +
-  geom_segment(data = all.f.e, aes(x = min, xend = max, y = spp, yend = spp), size = 1.5, col = "grey") +
-  geom_segment(data = hira.f.e, aes(x = min, xend = max, y = spp, yend = spp), size = 1.5,  col = pal[1]) +
-  labs(x = "Elevation (m)", y = "Species") +
-  geom_point(data = hira.sgl.f.e, aes(y = spp, x = min), size = 2, col = pal[1]) +
-  theme_bw()
-
-
-## ----plot_ranges, echo = FALSE--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-hira.range.plots <- (hira.wdy.rg | hira.fern.rg) +
-  plot_annotation(tag_levels = "a")
-
-
-all.range.plots <- (all.wdy.rg | all.fern.rg) +
-  plot_annotation(tag_levels = "a")
-
-######
-## Alternate range plots with geom_linerange to show H and All side-by-side
 
 cols <- c("All" = "grey", "Hirakimata" = "#7FC97F")
 
-woody.comb <- bind_rows(list(All = all.e, Hirakimata = hira.e), .id = "Site")
-woody.comb$spp <- fct_reorder(hira.e$spp, hira.e$max, min)
+woody.low.comb <- bind_rows(list(All = all.e, Hirakimata = hira.e), .id = "Site")
+woody.low.comb$species <- fct_reorder(woody.comb$species, woody.comb$max_elev, min)
 
-fern.comb <- bind_rows(list(All = all.f.e, Hirakimata = hira.f,e), .id = "Site")
-fern.comb$spp <- fct_reorder(hira.f.e$spp, hira.f.e$max, min)
 
 all.wdy.ls <- ggplot() +
-  geom_linerange(data = woody.comb, aes(ymin = min, ymax = max, x = spp, group = Site, col = Site), position = position_dodge(.5), size = 1) +
+  geom_linerange(data = woody.low.comb, aes(ymin = min_elev, ymax = max_elev, x = species, group = Site, col = Site), position = position_dodge(.5), size = 1) +
   geom_hline(yintercept = 400, lty = 2, size = 1.2) +
-  geom_point(data = hira.e %>% filter(single == 1), aes(x = spp, y = max), col = "#7FC97F", size = 2) +
+  geom_point(data = hira.e %>% filter(single == 1), aes(x = species, y = max_elev), col = "#7FC97F", size = 2) +
   scale_colour_manual(values = cols) +
   labs(x = "Species", y = "Elevation (m)") +
   coord_flip() +
   theme_bw() +
   theme(legend.position = "bottom")
+
+####
+
+fern.all <- fern.ranges %>%
+    filter(n_sites == 3)
+
+hira.f.e <- fern.all %>% filter(hirak == TRUE)
+hira.f.sgl.e <- filter(hira.f.e, single == 1)
+
+all.f.e <- fern.all %>%
+  filter(hirak == FALSE) %>%
+  group_by(species) %>%
+  summarise(min_elev = min(min_elev), max_elev = max(max_elev)) %>%
+  ungroup()
+
+
+fern.comb <- bind_rows(list(All = all.f.e, Hirakimata = hira.f.e), .id = "Site")
+fern.comb$species <- fct_reorder(fern.comb$species, fern.comb$max_elev, min)
 
 all.fern.ls <- ggplot() +
-  geom_linerange(data = fern.comb, aes(ymin = min, ymax = max, x = spp, group = Site, col = Site), position = position_dodge(.5), size = 1) +
+  geom_linerange(data = fern.comb, aes(ymin = min_elev, ymax = max_elev, x = species, group = Site, col = Site), position = position_dodge(.5), size = 1) +
   geom_hline(yintercept = 400, lty = 2, size = 1.2) +
-  geom_point(data = hira.f.e %>% filter(single == 1), aes(x = spp, y = max), col = "#7FC97F", size = 2) +
+  geom_point(data = hira.f.e %>% filter(single == 1), aes(x = species, y = max_elev), col = "#7FC97F", size = 2) +
   scale_colour_manual(values = cols) +
   labs(x = "Species", y = "Elevation (m)") +
   coord_flip() +
   theme_bw() +
   theme(legend.position = "bottom")
 
+####
+hira.range.plots <- (hira.wdy.rg | hira.fern.rg) +
+  plot_annotation(tag_levels = "a")
 
 all.ls.plots <- (all.wdy.ls | all.fern.ls) +
-  plot_annotation(tag_levels = "a")
+  plot_annotation(tag_levels = "a") + 
+  plot_layout(guides = "collect") &
+  theme(legend.position = "bottom")
