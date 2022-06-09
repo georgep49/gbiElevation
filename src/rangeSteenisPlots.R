@@ -1,6 +1,5 @@
 ## R code to setup data and draw the range plots
 
-library(vegan)
 library(tidyverse)
 library(patchwork)
 
@@ -91,7 +90,6 @@ lowland.f.spp <- names(lowland.f.spp[lowland.f.spp == TRUE])
 
 ###
 # Get the range data for woody spp and fern spp for Hirakimata
-pal <- RColorBrewer::brewer.pal(3, "Accent")   
 
 # ordering by min
 hira_only.range <- woody.ranges %>%
@@ -127,7 +125,7 @@ hira.e <- woody.low.all %>% filter(hirak == TRUE)
 hira.sgl.e <- filter(hira.e, single == 1)
 
 all.e <- woody.low.all %>%
-  filter(hirak == FALSE) %>%
+  filter(hirak == FALSE) %>%  # range not at Hirak
   group_by(species) %>%
   summarise(min_elev = min(min_elev), max_elev = max(max_elev)) %>%
   ungroup()
@@ -158,11 +156,11 @@ all.wdy.ls <- ggplot() +
 fern.low.all <- fern.ranges %>%
   filter(n_sites == 3, species %in% upper_n(lowland.f.spp, 3))
 
-hira.f.e <- fern.all %>% filter(hirak == TRUE)
+hira.f.e <- fern.low.all %>% filter(hirak == TRUE)
 hira.f.sgl.e <- filter(hira.f.e, single == 1)
 
-all.f.e <- fern.all %>%
-  filter(hirak == FALSE) %>%
+all.f.e <- fern.low.all %>%
+  filter(hirak == FALSE) %>%    # get range not at Hirakimata
   group_by(species) %>%
   summarise(min_elev = min(min_elev), max_elev = max(max_elev)) %>%
   ungroup()

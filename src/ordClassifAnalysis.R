@@ -60,6 +60,15 @@ elev.plots <- elev.s.woody + elev.s.ferns +
   plot_layout(guides = "collect") &
   theme(legend.position = "bottom")
 
+# One of the refs asked about proportional change in richness with elevation for ferns vs woody
+prop.change <- all.data %>% 
+  group_by(site) %>%
+  filter(elev == 150 | elev == 400) %>%
+  mutate(delta_w = lead(woody) / woody, 
+         delta_D = lead(ferns) / ferns) %>%
+  ungroup()
+    
+
 ## Into the ordination and classification analysis
 
 # Bray-curtis distance matrix
