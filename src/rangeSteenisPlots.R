@@ -1,32 +1,23 @@
-## ----setup, include=FALSE-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+## R code to setup data and draw the range plots
+
 library(vegan)
 library(tidyverse)
-library(broom)
 library(patchwork)
-library(ggrepel)
-# library(ggvegan)
-library(ggdendro)
-library(dendextend)
-library(sf)
-library(ggspatial)
 
-source("./src/helperPlots.r")
-
-## ----load_data, echo = FALSE----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+## Load the data
 mts.woody <- read.csv("./data/woodyAltitude_final.csv", header = T, row.names = 1)
 mts.ferns <- read.csv("./data/fernAltitude_final.csv", header = T, row.names = 1)
 
-# get the site codes and elevations
+# Extract the site codes and elevations 
 site <- str_sub(names(mts.woody), 1, 1)
 elev <- as.numeric(str_sub(names(mts.woody), 3, 5))
 
-# transpose and convert NAs to zero
+# Transpose and convert NAs to zero for vegan
 mts.woody <- t(mts.woody)
 mts.woody[is.na(mts.woody)] <- 0
 
 mts.ferns <- t(mts.ferns)
 mts.ferns[is.na(mts.ferns)] <- 0
-
 
 ##########################################################
 # Woody species occurrences
@@ -56,12 +47,13 @@ spp_at_hira_only <- Reduce(setdiff, list(spp_at_h, spp_at_t, spp_at_r))
 # species at both T and R (and poss H)
 spp_at_tr <- union(spp_at_t, spp_at_r) # spp at T and R
 
-# get list of lowland species: present at 150 and 200 not above 450
+# get list of lowland woody species: present at 150 and 200 not above 500
 lowland.spp <- (colSums(mts.woody[elev == 150,]) == 3) + (colSums(mts.woody[elev == 200,]) == 3) > 0
 spp.notabv.450 <- colSums(mts.woody[elev %in% seq(550,600,50),]) == 0
 
 lowland.spp <- lowland.spp * spp.notabv.450
 lowland.spp <- names(lowland.spp[lowland.spp == TRUE]) 
+
 
 ########################
 # Fern spp
@@ -96,8 +88,9 @@ fspp.notabv.450 <- colSums(mts.ferns[elev %in% seq(550,600,50),]) == 0
 
 lowland.f.spp <- lowland.f.spp * fspp.notabv.450
 lowland.f.spp <- names(lowland.f.spp[lowland.f.spp == TRUE]) 
-## ----extract_range_data, echo = FALSE------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+###
+# Get the range data for woody spp and fern spp for Hirakimata
 pal <- RColorBrewer::brewer.pal(3, "Accent")   
 
 # ordering by min
@@ -122,8 +115,11 @@ hira.fern.rg <- ggplot(data = hira_f_only.range) +
   labs(x = "Elevation (m)", y = "Species") +
   theme_bw()
 
+
 ####
 # Extract the spp at Hira also present elsewhere (as may have different range) - have to be "lowland species"
+# and occur at all three sites
+
 woody.low.all <- woody.ranges %>%
   filter(n_sites == 3, species %in% upper_n(lowland.spp, 3))
 
@@ -159,8 +155,8 @@ all.wdy.ls <- ggplot() +
 
 ####
 
-fern.all <- fern.ranges %>%
-    filter(n_sites == 3)
+fern.low.all <- fern.ranges %>%
+  filter(n_sites == 3, species %in% upper_n(lowland.f.spp, 3))
 
 hira.f.e <- fern.all %>% filter(hirak == TRUE)
 hira.f.sgl.e <- filter(hira.f.e, single == 1)
